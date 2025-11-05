@@ -1,20 +1,52 @@
 'use client';
 
-import {Button, Paper, Typography, TextField} from "@mui/material";
+import {Button, Paper, TextField, Typography} from "@mui/material";
 import {useState} from "react";
 import {AuthType} from "@/app/auth/types/auth.type";
 import {Controller, useForm} from "react-hook-form";
 import {AuthFormType} from "@/app/auth/types/auth-form.type";
+import {useCreateUserWithEmailAndPassword, useSignInWithEmailAndPassword} from "react-firebase-hooks/auth";
+import {auth} from "@/configs/firebase.config";
+import {useRouter} from "next/navigation";
+
 
 export default function Page() {
   const {
     control,
+    reset,
     handleSubmit,
     formState: { errors }
-  } = useForm<AuthFormType>();
+  } = useForm<AuthFormType>({
+    defaultValues: {
+      email: '',
+      password: ''
+    }
+  });
 
-  const onSubmit = (data: AuthFormType) => {
-    console.log(data);
+  const [createUserWithEmailAndPassword] = useCreateUserWithEmailAndPassword(auth);
+  const [signInWithEmailAndPassword] = useSignInWithEmailAndPassword(auth);
+  const router = useRouter();
+
+  const onSubmit = async (data: AuthFormType) => {
+    reset();
+
+    if (authType === AuthType.REGISTER) {
+      try {
+        const res = await createUserWithEmailAndPassword(data.email, data.password);
+        router.push("/");
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    if (authType === AuthType.LOGIN) {
+      try {
+        const res = await signInWithEmailAndPassword(data.email, data.password);
+        router.push("/");
+      } catch (e) {
+        console.error(e)
+      }
+    }
   }
 
   const [authType, setAuthType] = useState<AuthType>(AuthType.LOGIN);
@@ -53,7 +85,6 @@ export default function Page() {
             <TextField
               {...field}
               label="Email"
-              type="email"
               variant="outlined"
               error={!!errors.email}
               helperText={errors.email?.message}
